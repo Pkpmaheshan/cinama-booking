@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from '@jest/globals';
 
 describe('Booking Business Logic', () => {
 
@@ -60,13 +60,13 @@ describe('Booking Business Logic', () => {
     expect(status).toBe('CONFIRMED');
   });
 
-  test('PayHere payment should remain pending before confirmation', () => {
-    const paymentMethod = 'payhere';
+test('PayHere payment should remain pending before confirmation', () => {
+  const paymentMethod = 'payhere';
 
-    const status =
-      paymentMethod === 'cash' ? 'CONFIRMED' : 'PENDING';
+  const status =
+    paymentMethod === 'payhere' ? 'PENDING' : 'CONFIRMED';
 
-    expect(status).toBe('PENDING');
-  });
+  expect(status).toBe('PENDING');
+});
 
 });
