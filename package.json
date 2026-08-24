@@ -1,6 +1,7 @@
 {
   "name": "cinemaapi",
   "version": "1.0.0",
+   "type": "module",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
@@ -29,6 +30,8 @@
     "@types/node": "^20.12.7",
     "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.4",
     "globals": "^17.11.0",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.12",
