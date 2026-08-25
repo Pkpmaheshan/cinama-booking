@@ -57,9 +57,16 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
         },
         todayShows,
         recentBookings
-      }
+            }
     });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error
+      ? error.message
+      : 'Unknown server error';
+
+    res.status(500).json({
+      success: false,
+      message
+    });
   }
 };

@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import Booking from '../models/Booking';
 import Show from '../models/Show';
 import { removeHold } from '../socket/seatSocket';
+import { calculateTotal, findConflictingSeats } from '../utils/bookingUtils';
 
 export const generateBookingRef = () => {
   const date = new Date().toISOString().slice(0,10).replace(/-/g, '');
@@ -44,17 +45,17 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
     });
 
     if (existingBookings.length > 0) {
-      const booked = new Set();
-      existingBookings.forEach(b => b.seatIds.forEach(id => booked.add(id)));
-      const conflicts = seatIds.filter((id: string) => booked.has(id));
-      console.log(`[BOOKING]\nSeat validation: FAILED\nBooked seats: ${conflicts.join(',')}\nReturning HTTP 409`);
-      return res.status(409).json({ success: false, message: 'One or more selected seats are already booked' });
+      const conflicts = findConflictingSeats(seatIds, existingBookings);
+      if (conflicts.length > 0) {
+        console.log(`[BOOKING]\nSeat validation: FAILED\nBooked seats: ${conflicts.join(',')}\nReturning HTTP 409`);
+        return res.status(409).json({ success: false, message: 'One or more selected seats are already booked' });
+      }
     }
     
     console.log(`[BOOKING]\nSeat validation: PASSED`);
 
     // 3. Calculate total
-    const totalAmount = show.ticketPrice * seatIds.length;
+    const totalAmount = calculateTotal(show.ticketPrice, seatIds.length);
     console.log(`[BOOKING]\nTicket price: ${show.ticketPrice}\nCalculated total: ${totalAmount}`);
 
     // 4. Set Status based on Payment Method

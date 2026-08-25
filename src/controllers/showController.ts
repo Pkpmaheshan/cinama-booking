@@ -13,6 +13,17 @@ export const getAllShows = async (req: Request, res: Response) => {
   }
 };
 
+export const getTodayShows = async (req: Request, res: Response) => {
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    console.log(`[SHOW] Get today shows for ${todayStr}`);
+    const shows = await Show.find({ date: { $regex: `^${todayStr}` } }).populate('hallId').sort({ startTime: 1 });
+    res.json(shows);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const getShowsByMovie = async (req: Request, res: Response) => {
   try {
     console.log(`[SHOW] Get shows for movie`);
@@ -25,9 +36,27 @@ export const getShowsByMovie = async (req: Request, res: Response) => {
 
 export const createShow = async (req: Request, res: Response) => {
   try {
+    const { hallId } = req.body;
+    
+    console.log(`[SHOW CREATE DEBUG]
+Incoming hallId: ${hallId}
+Incoming hallId type: ${typeof hallId}`);
+
+    if (!hallId || typeof hallId !== 'string' || hallId.length !== 24) {
+      return res.status(400).json({ success: false, message: 'Valid hallId is required' });
+    }
+
+    const hallExists = await Hall.exists({ _id: hallId });
+    console.log(`Hall exists: ${!!hallExists}`);
+    
+    if (!hallExists) {
+      return res.status(400).json({ success: false, message: 'Valid hallId is required' });
+    }
+
     console.log(`[SHOW] Create show`);
     const show = new Show(req.body);
     const createdShow = await show.save();
+    console.log(`Created show ID: ${createdShow._id}`);
     res.status(201).json({ success: true, data: createdShow });
   } catch (error: any) {
     res.status(400).json({ success: false, message: error.message });
@@ -67,6 +96,21 @@ export const scheduleBulkShows = async (req: Request, res: Response) => {
     console.log(`[SHOW] Bulk schedule`);
     const { movieId, hallId, startDate, endDate, daysOfWeek, showtimes } = req.body;
     
+    console.log(`[SHOW CREATE DEBUG]
+Incoming hallId: ${hallId}
+Incoming hallId type: ${typeof hallId}`);
+
+    if (!hallId || typeof hallId !== 'string' || hallId.length !== 24) {
+      return res.status(400).json({ success: false, message: 'Valid hallId is required' });
+    }
+
+    const hallExists = await Hall.exists({ _id: hallId });
+    console.log(`Hall exists: ${!!hallExists}`);
+    
+    if (!hallExists) {
+      return res.status(400).json({ success: false, message: 'Valid hallId is required' });
+    }
+
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const daysStr = daysOfWeek.map((d: number) => dayNames[d]).join(', ');
     const timesStr = showtimes.map((st: any) => st.startTime).join(', ');
@@ -108,7 +152,23 @@ export const getShowSeats = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Show not found' });
     }
     
-    const hall: any = await Hall.findById(show.hallId);
+    // Normalize hallId - could be string/ObjectId or populated Hall document
+    const rawHallId = show.hallId;
+    const hallIdType = typeof rawHallId;
+    const normalizedHallId = (rawHallId && typeof rawHallId === 'object' && (rawHallId as any)._id)
+      ? (rawHallId as any)._id
+      : rawHallId;
+
+    console.log(`[SHOW SEAT DEBUG]
+Show ID: ${show._id}
+Show found: true
+Raw hallId: ${rawHallId}
+Hall ID type: ${hallIdType}
+Normalized hallId: ${normalizedHallId}`);
+
+    const hall: any = await Hall.findById(normalizedHallId);
+    console.log(`Hall found: ${!!hall}`);
+
     if (!hall) {
       return res.status(404).json({ success: false, message: 'Hall not found' });
     }

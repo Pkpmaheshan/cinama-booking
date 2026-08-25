@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 // Point dotenv to the root .env
-dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config();
 
 import User from '../src/models/User';
 import Movie from '../src/models/Movie';

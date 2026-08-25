@@ -3,9 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 
-const generateToken = (id: string) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET as string, { expiresIn: '30d' });
-};
+import { generateToken, hashPassword, comparePassword } from '../utils/authUtils';
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -23,8 +21,7 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: 'User already exists' });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await hashPassword(password);
 
     const user = await User.create({
       name,
@@ -63,7 +60,7 @@ export const login = async (req: Request, res: Response) => {
 
     const user = await User.findOne({ email });
 
-    if (user && (await bcrypt.compare(password, user.password as string))) {
+    if (user && (await comparePassword(password, user.password as string))) {
       console.log(`Result: SUCCESS\nRole: ${user.role}`);
       res.json({
         success: true,

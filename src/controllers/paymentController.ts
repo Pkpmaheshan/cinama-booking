@@ -4,6 +4,7 @@ import Booking from '../models/Booking';
 import Show from '../models/Show';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { removeHold } from '../socket/seatSocket';
+import { generatePaymentHash, verifyPaymentSignature } from '../utils/paymentUtils';
 
 const generateBookingRef = () => {
   const date = new Date().toISOString().slice(0,10).replace(/-/g, '');
@@ -68,9 +69,7 @@ export const createPaymentSession = async (req: AuthRequest, res: Response) => {
     const merchantSecret = process.env.PAYHERE_MERCHANT_SECRET || '';
     const currency = 'LKR';
 
-    // Hash generation
-    const hashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
-    const hash = crypto.createHash('md5').update(merchantId + orderId + amountFormatted + currency + hashedSecret).digest('hex').toUpperCase();
+    const hash = generatePaymentHash(merchantId, orderId, amountFormatted, currency, merchantSecret);
 
     console.log(`[PAYMENT] Hash generated: YES\n[PAYMENT] Merchant secret exposed: NO\n[PAYMENT] Payment session created`);
 
@@ -118,18 +117,16 @@ export const handlePayHereNotification = async (req: Request, res: Response) => 
     console.log(`[PAYMENT] payhere_amount: ${payhere_amount}`);
     console.log(`[PAYMENT] payhere_currency: ${payhere_currency}`);
 
-    // Verify signature with correct 2 decimal formatting
     const merchantSecret = process.env.PAYHERE_MERCHANT_SECRET || '';
-    const hashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
-    
-    // Format to 2 decimal places as per PayHere docs
-    const formattedAmount = parseFloat(payhere_amount).toFixed(2);
-    
-    const localSig = crypto.createHash('md5').update(
-      merchant_id + order_id + formattedAmount + payhere_currency + status_code + hashedSecret
-    ).digest('hex').toUpperCase();
-
-    const isSignatureValid = localSig === md5sig || localSig === md5sig.toUpperCase();
+    const isSignatureValid = verifyPaymentSignature(
+      merchant_id,
+      order_id,
+      payhere_amount,
+      payhere_currency,
+      status_code,
+      md5sig,
+      merchantSecret
+    );
     console.log(`[PAYMENT] Signature valid: ${isSignatureValid ? 'YES' : 'NO'}`);
 
     if (!isSignatureValid) {

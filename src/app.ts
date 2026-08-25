@@ -7,6 +7,7 @@ import showRoutes from './routes/showRoutes';
 import bookingRoutes from './routes/bookingRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import adminRoutes from './routes/adminRoutes';
+import hallRoutes from './routes/hallRoutes';
 import { apiLogger } from './middleware/loggerMiddleware';
 
 dotenv.config();
@@ -35,9 +36,10 @@ app.use('/api/shows', showRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/halls', hallRoutes);
 
 // Global Error Handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.log(`\n[API ERROR]`);
   console.log(`Method: ${req.method}`);
   console.log(`Path: ${req.originalUrl}`);
